@@ -1,9 +1,36 @@
 import os
 import uuid
+from django.contrib.auth import authenticate, login, logout
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.views.decorators.csrf import ensure_csrf_cookie
+from rest_framework.permissions import AllowAny
+from rest_framework.decorators import permission_classes, api_view
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from PIL import Image, ImageDraw, ImageFont
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    @ensure_csrf_cookie
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return Response({'detail': 'Logged in succesfully'})
+        else:
+            return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+def LogoutView(APIView):
+    def post(self, request):
+        logout(request)
+        return Response({'detail': 'Logged out succesfully'})
 
 
 def check_bearer_auth(request):

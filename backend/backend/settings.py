@@ -30,7 +30,7 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["www.vandiest.it","vandiest.it"]
+ALLOWED_HOSTS = ["www.vandiest.it","vandiest.it", "localhost:80"]
 
 
 # Application definition
@@ -155,7 +155,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',  # or TokenAutentication
+    ]
     'DEFAULT_PERMISSION_CLASSES': [
+        'test_framework.permissions.IsAuthenticated',
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     ]
 }
