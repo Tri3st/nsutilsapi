@@ -63,6 +63,8 @@ CORS_ALLOW_ORIGINS = [
         "127.0.0.1:80"
         ]
 
+CORS_ALLOW_CREDENTIALS = True
+
 CORS_ALLOW_HEADERS = (
     "accept",
     "authorization",
