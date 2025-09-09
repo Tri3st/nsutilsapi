@@ -30,7 +30,7 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["www.vandiest.it","vandiest.it", "localhost:80"]
+ALLOWED_HOSTS = ["www.vandiest.it","vandiest.it", "localhost", "127.0.0.1"]
 
 
 # Application definition
@@ -59,8 +59,8 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOW_ORIGINS = [
-        "localhost:80",
-        "127.0.0.1:80"
+        "localhost",
+        "127.0.0.1"
         ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -159,9 +159,10 @@ REST_FRAMEWORK = {
     # or allow read-only access for unauthenticated users.
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',  # or TokenAutentication
+        'api.authentication.BearerAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'test_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.IsAuthenticated',
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     ]
 }

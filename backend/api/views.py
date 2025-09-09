@@ -1,22 +1,27 @@
 import os
 import uuid
+import base64
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.authentication import SessionAuthentication
+from .authentication import BearerAuthentication
 from django.contrib.auth import authenticate, login, logout
+from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.views.decorators.csrf import ensure_csrf_cookie
-from rest_framework.permissions import AllowAny
-from rest_framework.decorators import permission_classes, api_view
+from rest_framework.decorators import permission_classes, api_view, authentication_classes
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from PIL import Image, ImageDraw, ImageFont
 
 
+@method_decorator(ensure_csrf_cookie, name='dispatch')
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
 
-    @ensure_csrf_cookie
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -27,35 +32,22 @@ class LoginView(APIView):
         else:
             return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-def LogoutView(APIView):
+
+class LogoutView(APIView):
+    authentication_classes = [SessionAuthentication, BearerAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         logout(request)
         return Response({'detail': 'Logged out succesfully'})
 
 
-def check_bearer_auth(request):
-    """
-    Validates Bearer token that encodes 'username:password' in Base64.
-    Returns Django user object if valid, otherwise None.
-    """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startsWith("Bearer "):
-        return None
-
-    token = auth_header.split(" ", 1)[1]  # get part after "Bearer "
-    try:
-        decoded = base64.b64decode(token).decode("utf-8")
-        username, password = decoded.split(":", 1)
-    except Exception:
-        return None
-
-    user = authenticate(username=username, password=password)
-    return user
-
-
-@csrf_exempt  # remove if you handle CSRF tokens in Vue
+@authentication_classes([BearerAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
+# @csrf_exempt  # remove if you handle CSRF tokens in Vue TEMPORARILY DISABLED FOR TESTING
 def text_to_image(request):
-    user = check_bearer_auth(request)
+    user = request.user
+
     if not user:
         return JsonResponse({"error": "Unauthorized"}, status=401)
 
