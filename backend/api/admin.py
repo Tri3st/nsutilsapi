@@ -8,7 +8,7 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets = (
         (None, {'fields': ('role',)}),
     )
-    add_fieldset = USerAdmin.add_fieldsets + (
+    add_fieldset = UserAdmin.add_fieldsets + (
         (None, {'fields': ('role',)}),
     )
 
