@@ -28,9 +28,31 @@ class LoginView(APIView):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return Response({'detail': 'Logged in succesfully'})
+            user_info = {
+                    "username": user.username,
+                    "email": user.email,
+                    "role": user.role,
+            }
+            return Response({
+                'detail': 'Logged in succesfully',
+                'userinfo': user_info,
+            })
         else:
             return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class UserInfoView(APIView):
+    authentication_classes = [SessionAuthentication, BearerAuthentication]
+    permissions_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        user_info = {
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+        }
+        return Response({"userinfo": user_info})
 
 
 class LogoutView(APIView):
