@@ -1,9 +1,8 @@
 import os
 import uuid
-import base64
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication
-from .authentication import BearerAuthentication
+from authentication import BearerAuthentication
 from django.contrib.auth import authenticate, login, logout
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
@@ -13,7 +12,6 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.decorators import permission_classes, api_view, authentication_classes
 from django.conf import settings
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from PIL import Image, ImageDraw, ImageFont
 
 

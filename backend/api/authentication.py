@@ -19,4 +19,4 @@ class BearerAuthentication(BaseAuthentication):
         user = authenticate(username=username, password=password)
         if user is None:
             raise AuthenticationFailed("Invalid username/password")
-        return (user, None)
+        return user, None

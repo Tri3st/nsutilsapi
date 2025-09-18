@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import text_to_image, LoginView, LogoutView
+from views import text_to_image, LoginView, LogoutView
 
 
 print(f"LogoutView is : {LogoutView}, type: {type(LogoutView)}")
