@@ -2,7 +2,7 @@ import os
 import uuid
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication
-from authentication import BearerAuthentication
+from .authentication import BearerAuthentication
 from django.contrib.auth import authenticate, login, logout
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
