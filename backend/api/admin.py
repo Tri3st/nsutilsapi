@@ -5,7 +5,7 @@ from .models import CustomUser
 
 # Register your models here.
 class CustomUserAdmin(UserAdmin):
-    fieldsets = UserAdmin.fieldsets = (
+    fieldsets = UserAdmin.fieldsets + (
         (None, {'fields': ('role',)}),
     )
     add_fieldset = UserAdmin.add_fieldsets + (
