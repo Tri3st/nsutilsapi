@@ -1,19 +1,27 @@
 import os
 import uuid
+import datetime
+import base64
+
+from django.core.files.base import ContentFile
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication
-from .authentication import BearerAuthentication
 from django.contrib.auth import authenticate, login, logout
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.views.decorators.csrf import ensure_csrf_cookie
-from rest_framework.decorators import permission_classes, api_view, authentication_classes
+from rest_framework.decorators import permission_classes, api_view, authentication_classes, parser_classes
 from django.conf import settings
 from django.http import JsonResponse
 from PIL import Image, ImageDraw, ImageFont
 
+from .serializers import ExtractedImageSerializer
+from .authentication import BearerAuthentication
+from .models import ExtractedImage
+import xml.etree.ElementTree as ET
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class LoginView(APIView):
@@ -109,3 +117,55 @@ def text_to_image(request):
 
     return JsonResponse({"error": "Invalid request"}, status=405)
 
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser])
+def upload_fotos_xml(request):
+    file_obj = request.FILES.get('file')
+    if not file_obj:
+        return JsonResponse({"error": "No file provided"}, status=400)
+
+    tree = ET.parse(file_obj)
+    root = tree.getroot()
+
+    saved_images = []
+
+    for idx, foto_elem in enumerate(root.findall('.//foto')):
+        raw_data = foto_elem.text.strip()
+        try:
+            img_bytes = base64.b64decode(raw_data, validate=True)
+        except Exception:
+            # Assume raw binary string
+            img_bytes = raw_data.encode("utf-8")
+
+        filename = f"{request.user.username}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}_{idx}.jpg"
+        image_path = os.path.join("images", request.user.username, filename)
+
+        extracted = ExtractedImage.objects.create(
+            user=request.user,
+            image=ContentFile(img_bytes, name=filename),
+            original_filename=filename,
+        )
+        saved_images.append({
+            "url": request.build_absolute_uri(extracted.image.url),
+            "id": extracted.id,
+        })
+
+    # Instead of manually building JSON, serialize them
+    serializer = ExtractedImageSerializer(saved_images, many=True, context={'request': request})
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser])
+def convert_raw_image(request):
+    raw_data = request.FILES.get('raw_data')
+    if not raw_data:
+        return JsonResponse({"error": "No raw data provided"}, status=400)
+
+    # ... decode + save as before ...
+
+    serializer = ExtractedImageSerializer(extracted, context={'request': request})
+    return Response(serializer.data)
