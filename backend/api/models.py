@@ -16,13 +16,19 @@ class CustomUser(AbstractUser):
         return self.username
 
 
+def user_directory_path(instance, filename):
+    # file will be uploaded to MEDIA_ROOT/images_<username>/YYYY-MM-DD/filename
+    date_str = instance.created_at.strftime('%Y-%m-%d') if instance.created_at else timezone.now().strftime('%Y-%m-%d')
+    return f"images_{instance.user.username}_{date_str}/{filename}"
+
+
 class ExtractedImage(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='extracted_images'
     )
-    image = models.ImageField(upload_to=f"images_{user.username}_%Y-%m-%d")
+    image = models.ImageField(upload_to=user_directory_path)
     original_filename = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
