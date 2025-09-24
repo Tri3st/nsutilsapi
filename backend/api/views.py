@@ -169,3 +169,25 @@ def convert_raw_image(request):
 
     serializer = ExtractedImageSerializer(extracted, context={'request': request})
     return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser])
+def save_selected_images(request):
+    ids = request.data.get('ids', [])
+    user = request.user
+
+    if not isinstance(ids, list) or not ids:
+        return JsonResponse({"error": "No valid IDs provided."}, status=400)
+
+    # Filter images belonging to user and with provided IDs
+    images_to_save = ExtractedImage.objects.filter(id__in=ids, user=user)
+
+    # Implement your "save" logic here — e.g., mark as saved, move, or process them
+    # For demonstration, let's just delete them (or do something else)
+    count = images_to_save.count()
+    images_to_save.delete()
+
+    return Response({"message": f"Successfully saved {count} images."})
+
