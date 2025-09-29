@@ -121,10 +121,17 @@ def text_to_image(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser])
-def upload_fotos_xml(request):
+def upload_fotos(request):
     file_obj = request.FILES.get('file')
     if not file_obj:
         return JsonResponse({"error": "No file provided"}, status=400)
+
+    # IF the file is a .zip then unzip it with provided code
+    # IF file is xml proceed with 2 ways:
+    # 1 - normal
+    # 2 - retail
+
+
 
     tree = ET.parse(file_obj)
     root = tree.getroot()
