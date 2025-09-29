@@ -1,7 +1,9 @@
 import os
+import shutil
 import uuid
 import datetime
 import base64
+import zipfile
 
 from django.core.files.base import ContentFile
 from rest_framework.parsers import MultiPartParser
@@ -123,15 +125,46 @@ def text_to_image(request):
 @parser_classes([MultiPartParser])
 def upload_fotos(request):
     file_obj = request.FILES.get('file')
+    zippassw = request.FILES.get('zip-passw')
+
     if not file_obj:
         return JsonResponse({"error": "No file provided"}, status=400)
 
     # IF the file is a .zip then unzip it with provided code
+    if file_obj.name.lower().endswith('.zip'):
+        if not zippassw:
+            return JsonResponse({"error": "ZIP password is required for ZIP files"}, status=400)
+
+    # Create a temporary directory to extract files
+    temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp', str(uuid.uuid4()))
+    os.makedirs(temp_dir, exist_ok=True)
+
+    try:
+        # Save the file temporarily
+        zip_path = os.path.join(temp_dir, file_obj.name)
+        with open(zip_path, 'wb') as f:
+            for chunk in file_obj.chunks():
+                f.write(chunk)
+
+    # Extract the file with passowrd
+        with zipfile.ZipFile(zip_path) as zf:
+            try:
+                zf.extractall(path=temp_dir, pwd=zippassw.encode())
+            except (zipfile.BadZipfile, RuntimeError) as e:
+                return JsonResponse({"error": "Invalid ZIP file or wrong password"}, status=400)
+        # Process the extracted XML file
+        xml_files = [f for f in os.listdir(temp_dir) if f.lower().endswith('.xml.')]
+        if not xml_files:
+            return JsonResponse({"error": "No XML file found in the ZIP archive"}, status=400)
+        file_obj = open(os.path.join(temp_dir, xml_files[0]), 'rb')
+
+    finally:
+        # Clean up temporary files
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
     # IF file is xml proceed with 2 ways:
     # 1 - normal
     # 2 - retail
-
-
 
     tree = ET.parse(file_obj)
     root = tree.getroot()
