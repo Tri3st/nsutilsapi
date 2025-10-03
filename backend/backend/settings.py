@@ -58,45 +58,52 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOWED_ORIGINS = [
+if DEBUG:
+
+    CORS_ALLOWED_ORIGINS = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "https://www.vandiest.it",
         "https://vandiest.it"
-        ]
+    ]
 
-CORS_TRUSTED_ORIGINS = [
-    "localhost:5173",
-    "127.0.0.1:5173",
-    "www.vandiest.it",
-    "vandiest.it"
-]
+    CORS_TRUSTED_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://www.vandiest.it",
+        "https://vandiest.it"
+    ]
 
-# Add this setting
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://www.vandiest.it:80",
-    "https://vandiest.it:80"
-]
+    # Add this setting
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://www.vandiest.it",
+        "https://vandiest.it"
+    ]
 
 
-CORS_ALLOW_CREDENTIALS = True
+    CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOW_HEADERS = (
-    "accept",
-    "authorization",
-    "content-type",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
-)
+    CORS_ALLOW_HEADERS = (
+        "accept",
+        "authorization",
+        "content-type",
+        "user-agent",
+        "x-csrftoken",
+        "x-requested-with",
+    )
 
-CSRF_USE_SESSIONS = False
-SESSION_COOKIE_SAMESITE = 'none'
-CSRF_COOKIE_SAMESITE = 'none'
-CSRF_COOKIE_HTTPONLY = True  # Must be False to allow JavaScript access
-CSRF_COOKIE_NAME = 'csrftoken'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_PATH = '/'
+
+    CSRF_USE_SESSIONS = False
+    CSRF_COOKIE_SECURE = False
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_HTTPONLY = False # Must be False to allow JavaScript access
+    CSRF_COOKIE_NAME = 'csrftoken'
+    CSRF_COOKIE_PATH = '/'
 
 
 ROOT_URLCONF = 'backend.urls'

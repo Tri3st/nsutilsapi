@@ -1,3 +1,4 @@
+import io
 import os
 import shutil
 import uuid
@@ -33,6 +34,7 @@ class LoginView(APIView):
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
+
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
@@ -126,7 +128,8 @@ def text_to_image(request):
 @parser_classes([MultiPartParser])
 def upload_fotos(request):
     file_obj = request.FILES.get('file')
-    zippassw = request.FILES.get('zip-passw')
+    zippassw = request.POST.get('zip-passw')
+    xml_content = None
 
     if not file_obj:
         return JsonResponse({"error": "No file provided"}, status=400)
@@ -136,43 +139,62 @@ def upload_fotos(request):
         if not zippassw:
             return JsonResponse({"error": "ZIP password is required for ZIP files"}, status=400)
 
-    # Create a temporary directory to extract files
-    temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp', str(uuid.uuid4()))
-    os.makedirs(temp_dir, exist_ok=True)
+        # Create a temporary directory to extract files
+        temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp', str(uuid.uuid4()))
+        os.makedirs(temp_dir, exist_ok=True)
 
-    try:
-        # Save the file temporarily
-        zip_path = os.path.join(temp_dir, file_obj.name)
-        with open(zip_path, 'wb') as f:
-            for chunk in file_obj.chunks():
-                f.write(chunk)
+        try:
+            # Save the file temporarily
+            zip_path = os.path.join(temp_dir, file_obj.name)
+            with open(zip_path, 'wb') as f:
+                for chunk in file_obj.chunks():
+                    f.write(chunk)
 
-    # Extract the file with passowrd
-        with zipfile.ZipFile(zip_path) as zf:
-            try:
-                zf.extractall(path=temp_dir, pwd=zippassw.encode())
-            except (zipfile.BadZipfile, RuntimeError) as e:
-                return JsonResponse({"error": "Invalid ZIP file or wrong password"}, status=400)
-        # Process the extracted XML file
-        xml_files = [f for f in os.listdir(temp_dir) if f.lower().endswith('.xml.')]
-        if not xml_files:
-            return JsonResponse({"error": "No XML file found in the ZIP archive"}, status=400)
-        file_obj = open(os.path.join(temp_dir, xml_files[0]), 'rb')
+        # Extract the file with password
+            with zipfile.ZipFile(zip_path) as zf:
+                # If password is provided, check if file is encrypted
+                if zippassw and any(zi.flag_bits & 0x1 for zi in zf.filelist):
+                    # Print list of files in zip for debugging
+                    print("Files in zip : ", zf.namelist())
 
-    finally:
-        # Clean up temporary files
-        shutil.rmtree(temp_dir, ignore_errors=True)
+                try:
+                    zf.extractall(path=temp_dir, pwd=zippassw.encode())
+
+                except (zipfile.BadZipfile, RuntimeError) as e:
+                    return JsonResponse({"error": "Invalid ZIP file or wrong password"}, status=400)
+
+            print("Extracted files :", os.listdir(temp_dir))
+
+            # Process the extracted XML file
+            xml_files = [f for f in os.listdir(temp_dir) if f.lower().endswith('.xml')]
+
+            print("xml_files : ", xml_files)
+
+            if not xml_files:
+                return JsonResponse({"error": "No XML file found in the ZIP archive"}, status=400)
+            # file_obj = open(os.path.join(temp_dir, xml_files[0]), 'rb')
+            file_path = os.path.join(temp_dir, xml_files[0])
+            with open(file_path, 'rb') as f:
+                xml_content = f.read()
+
+        finally:
+            # Clean up temporary files
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
     # IF file is xml proceed with 2 ways:
     # 1 - normal
     # 2 - retail
 
-    tree = ET.parse(file_obj)
+    # tree = ET.parse(file_obj)
+    if xml_content:
+        tree = ET.parse(io.BytesIO(xml_content))
+    else:
+        tree = ET.parse(file_obj)
     root = tree.getroot()
 
     saved_images = []
 
-    for idx, foto_elem in enumerate(root.findall('.//foto')):
+    for idx, foto_elem in enumerate(root.findall('.//Afbeelding')):
         raw_data = foto_elem.text.strip()
         try:
             img_bytes = base64.b64decode(raw_data, validate=True)
@@ -188,6 +210,7 @@ def upload_fotos(request):
             image=ContentFile(img_bytes, name=filename),
             original_filename=filename,
         )
+
         saved_images.append({
             "url": request.build_absolute_uri(extracted.image.url),
             "id": extracted.id,
