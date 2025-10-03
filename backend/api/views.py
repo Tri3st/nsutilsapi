@@ -74,7 +74,6 @@ class LogoutView(APIView):
 
 @authentication_classes([BearerAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
-# @csrf_exempt  # remove if you handle CSRF tokens in Vue TEMPORARILY DISABLED FOR TESTING
 def text_to_image(request):
     user = request.user
 
@@ -121,6 +120,8 @@ def text_to_image(request):
 
 
 @api_view(['POST'])
+@ensure_csrf_cookie
+@authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser])
 def upload_fotos(request):

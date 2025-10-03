@@ -28,9 +28,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env("SECRET_KEY") 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env("DEBUG") == 'True'
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
+ALLOWED_HOSTS = env("ALLOWED_HOSTS", default=["localhost","127.0.0.1"])
 
 
 # Application definition
@@ -61,17 +61,25 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://www.vandiest.it:80",
-        "https://vandiest.it:80"
+        "https://www.vandiest.it",
+        "https://vandiest.it"
         ]
 
 CORS_TRUSTED_ORIGINS = [
+    "localhost:5173",
+    "127.0.0.1:5173",
+    "www.vandiest.it",
+    "vandiest.it"
+]
+
+# Add this setting
+CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://www.vandiest.it:80",
     "https://vandiest.it:80"
-
 ]
+
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -83,6 +91,13 @@ CORS_ALLOW_HEADERS = (
     "x-csrftoken",
     "x-requested-with",
 )
+
+CSRF_USE_SESSIONS = False
+SESSION_COOKIE_SAMESITE = 'none'
+CSRF_COOKIE_SAMESITE = 'none'
+CSRF_COOKIE_HTTPONLY = True  # Must be False to allow JavaScript access
+CSRF_COOKIE_NAME = 'csrftoken'
+
 
 ROOT_URLCONF = 'backend.urls'
 
