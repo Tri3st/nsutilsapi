@@ -24,3 +24,4 @@ class ExtractedImageSerializer(serializers.ModelSerializer):
         if request:
             return request.build_absolute_uri(obj.url.image.url)
         return obj.image.url
+
