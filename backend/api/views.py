@@ -169,7 +169,7 @@ def upload_fotos(request):
     if not file_obj:
         return JsonResponse({"error": "No file provided"}, status=400)
 
-    # --- Handle ZIP ---
+    # --- Handle ZIP uploads ---
     if file_obj.name.lower().endswith('.zip'):
         if not zippassw:
             return JsonResponse({"error": "ZIP password is required for ZIP files"}, status=400)
@@ -184,52 +184,68 @@ def upload_fotos(request):
                     f.write(chunk)
 
             with zipfile.ZipFile(zip_path) as zf:
-                if zippassw and any(zi.flag_bits & 0x1 for zi in zf.filelist):
-                    print("Files in zip:", zf.namelist())
-
                 try:
                     zf.extractall(path=temp_dir, pwd=zippassw.encode())
-                except (zipfile.BadZipFile, RuntimeError):
+                except (zipfile.BadZipfile, RuntimeError):
                     return JsonResponse({"error": "Invalid ZIP file or wrong password"}, status=400)
-
-            print("Extracted files:", os.listdir(temp_dir))
 
             xml_files = [f for f in os.listdir(temp_dir) if f.lower().endswith('.xml')]
             if not xml_files:
                 return JsonResponse({"error": "No XML file found in the ZIP archive"}, status=400)
 
-            with open(os.path.join(temp_dir, xml_files[0]), 'rb') as f:
+            xml_path = os.path.join(temp_dir, xml_files[0])
+            with open(xml_path, 'rb') as f:
                 xml_content = f.read()
-
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-    # --- Handle XML directly ---
+    # --- Parse XML content ---
     if xml_content:
         tree = ET.parse(io.BytesIO(xml_content))
     else:
         tree = ET.parse(file_obj)
-
     root = tree.getroot()
 
-    # --- Save images ---
     saved_images = []
-    for idx, foto_elem in enumerate(root.findall('.//Afbeelding')):
-        raw_data = foto_elem.text.strip()
+
+    # --- Iterate through koppeling_medewerkers_fotos elements ---
+    for koppeling_elem in root.findall('.//koppeling_medewerkers_fotos'):
+        medewerker_elem = koppeling_elem.find('Medewerker')
+        afbeelding_elem = koppeling_elem.find('Afbeelding')
+
+        if medewerker_elem is None or afbeelding_elem is None:
+            continue
+
+        medewerker_number = medewerker_elem.text.strip()
+        raw_data = afbeelding_elem.text.strip()
+
+        # Try to decode base64; fallback to raw binary
         try:
             img_bytes = base64.b64decode(raw_data, validate=True)
         except Exception:
-            img_bytes = raw_data.encode("utf-8")
+            img_bytes = raw_data.encode('utf-8')
 
-        filename = f"{request.user.username}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}_{idx}.jpg"
+        # Detect image type by header bytes
+        if img_bytes.startswith(b'\xff\xd8\xff'):
+            image_type = 'jpg'
+        elif img_bytes.startswith(b'\x89PNG'):
+            image_type = 'png'
+        else:
+            image_type = 'jpg'
+
+        image_size = len(img_bytes)
+        filename = f"{request.user.username}_{medewerker_number}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.{image_type}"
 
         extracted = ExtractedImage.objects.create(
             user=request.user,
+            medewerker_number=medewerker_number,
             image=ContentFile(img_bytes, name=filename),
             original_filename=filename,
+            image_type=image_type,
+            image_size=image_size,
         )
+
         saved_images.append(extracted)
 
-    # --- Return serialized results ---
     serializer = ExtractedImageSerializer(saved_images, many=True, context={'request': request})
     return Response(serializer.data)
