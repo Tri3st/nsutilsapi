@@ -52,15 +52,14 @@ class LoginView(APIView):
 
 
 class UserInfoView(APIView):
-    authentication_classes = [SessionAuthentication, BearerAuthentication]
-    permissions_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
         user_info = {
             "username": user.username,
             "email": user.email,
-            "role": user.role,
+            "role": getattr(user, "role", None),
         }
         return Response({"userinfo": user_info})
 
