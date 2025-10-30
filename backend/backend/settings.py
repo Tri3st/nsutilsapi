@@ -160,6 +160,37 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {  # This formatter includes timestamps!
+            'format': '[{asctime}] {levelname} {name} {message}',
+            'style': '{',  # Use new-style '{}'
+            'datefmt': '%d-%m-%Y %H:%M:%S',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{'
+        }
+    },
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'django-error.log'),
+            },
+        },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+            },
+        },
+    }
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
