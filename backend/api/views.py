@@ -208,43 +208,54 @@ def upload_fotos(request):
     saved_images = []
 
     # --- Iterate through koppeling_medewerkers_fotos elements ---
-    for koppeling_elem in root.findall('.//koppeling_medewerkers_fotos'):
-        medewerker_elem = koppeling_elem.find('Medewerker')
-        afbeelding_elem = koppeling_elem.find('Afbeelding')
+    
+    def find_child_case_insensitive(elem, tag_candidate):
+        for child in elem:
+            if child.tag.lower() == tag_candidate.lower():
+                return child
+        return None
 
-        if medewerker_elem is None or afbeelding_elem is None:
-            continue
+    for koppeling_elem in root.iter():
+        tag = koppeling_elem.tag.lower()
+        if tag in ('koppeling_medewerker_fotos', 'koppeling_medewerkers_fotos'):
+            medewerker_elem = find_child_case_insensitive(koppeling_elem, 'Medewerker')
+            afbeelding_elem = find_child_case_insensitive(koppeling_elem, 'Afbeelding')
 
-        medewerker_number = medewerker_elem.text.strip()
-        raw_data = afbeelding_elem.text.strip()
+            print(f"medewerker_elem : {medewerker_elem} afbeelding_elem : {afbeelding_elem}")
 
-        # Try to decode base64; fallback to raw binary
-        try:
-            img_bytes = base64.b64decode(raw_data, validate=True)
-        except Exception:
-            img_bytes = raw_data.encode('utf-8')
+            if medewerker_elem is None or afbeelding_elem is None:
+                continue
 
-        # Detect image type by header bytes
-        if img_bytes.startswith(b'\xff\xd8\xff'):
-            image_type = 'jpg'
-        elif img_bytes.startswith(b'\x89PNG'):
-            image_type = 'png'
-        else:
-            image_type = 'jpg'
+            medewerker_number = medewerker_elem.text.strip()
+            raw_data = afbeelding_elem.text.strip()
 
-        image_size = len(img_bytes)
-        filename = f"{request.user.username}_{medewerker_number}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.{image_type}"
+            # Try to decode base64; fallback to raw binary
+            try:
+                img_bytes = base64.b64decode(raw_data, validate=True)
+            except Exception:
+                img_bytes = raw_data.encode('utf-8')
 
-        extracted = ExtractedImage.objects.create(
-            user=request.user,
-            medewerker_number=medewerker_number,
-            image=ContentFile(img_bytes, name=filename),
-            original_filename=filename,
-            image_type=image_type,
-            image_size=image_size,
-        )
+            # Detect image type by header bytes
+            if img_bytes.startswith(b'\xff\xd8\xff'):
+                image_type = 'jpg'
+            elif img_bytes.startswith(b'\x89PNG'):
+                image_type = 'png'
+            else:
+                image_type = 'jpg'
 
-        saved_images.append(extracted)
+            image_size = len(img_bytes)
+            filename = f"{request.user.username}_{medewerker_number}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.{image_type}"
 
-    serializer = ExtractedImageSerializer(saved_images, many=True, context={'request': request})
-    return Response(serializer.data)
+            extracted = ExtractedImage.objects.create(
+                user=request.user,
+                medewerker_number=medewerker_number,
+                image=ContentFile(img_bytes, name=filename),
+                original_filename=filename,
+                image_type=image_type,
+                image_size=image_size,
+            )
+
+            saved_images.append(extracted)
+
+        serializer = ExtractedImageSerializer(saved_images, many=True, context={'request': request})
+        return Response(serializer.data)
