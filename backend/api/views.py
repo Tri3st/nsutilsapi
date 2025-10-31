@@ -155,6 +155,14 @@ def save_selected_images(request):
     return Response({"message": f"Successfully saved {count} images."})
 
 
+def find_child_case_insensitive(elem, tag_candidate):
+    """ Helper function to find a child element by tag name, ignoring case."""
+    for child in elem:
+        if child.tag.lower() == tag_candidate.lower():
+            return child
+    return None
+
+
 @api_view(['POST'])
 @ensure_csrf_cookie
 @authentication_classes([SessionAuthentication])
@@ -208,13 +216,6 @@ def upload_fotos(request):
     saved_images = []
 
     # --- Iterate through koppeling_medewerkers_fotos elements ---
-    
-    def find_child_case_insensitive(elem, tag_candidate):
-        for child in elem:
-            if child.tag.lower() == tag_candidate.lower():
-                return child
-        return None
-
     for koppeling_elem in root.iter():
         tag = koppeling_elem.tag.lower()
         if tag in ('koppeling_medewerker_fotos', 'koppeling_medewerkers_fotos'):
@@ -257,5 +258,5 @@ def upload_fotos(request):
 
             saved_images.append(extracted)
 
-        serializer = ExtractedImageSerializer(saved_images, many=True, context={'request': request})
-        return Response(serializer.data)
+    serializer = ExtractedImageSerializer(saved_images, many=True, context={'request': request})
+    return Response(serializer.data)
