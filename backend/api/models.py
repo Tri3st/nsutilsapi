@@ -40,3 +40,9 @@ class ExtractedImage(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.medewerker_number} - {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+
+    def delete(self, *args, **kwargs):
+        """ Make sure we delete the image file when removing the row"""
+        if self.image:
+            self.image.delete(save=False)
+        super().delete(*args, **kwargs)
