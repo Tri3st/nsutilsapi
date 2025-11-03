@@ -260,3 +260,46 @@ def upload_fotos(request):
 
     serializer = ExtractedImageSerializer(saved_images, many=True, context={'request': request})
     return Response(serializer.data)
+
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication])
+@permisssion_classes([IsAthenticated])
+@parser_classes([MultiPartParser])
+def upload_foto(request):
+    file_obj = request.FILES.get('file')
+    image_type = request.POST.get('image_type')
+    image_size = request.POST.get('image_size')
+
+    if not file_obj:
+        return JsonResponse({"error": "No file provided"}, status=400)
+
+    if not image_type or not image_size:
+        return JsonResponse({"error": "image_type and image_size are required"}, status=400)
+
+    try:
+        image_size = int(image_size)
+    except ValueError:
+        return JsonResponse({"error": "Invalid image_size"}, status=400)
+
+    original_filename = file_obj.name
+
+    # Use the filename as-is (trusting frontend)
+    filename_to_save = original_filename
+
+    # Save image content
+    img_bytes = file_obj.read()
+
+    extracted = ExtractedImage.objects.create(
+        user=request.user,
+        medewerker_number='',
+        image=ContentFile(img_bytes, name=filename_to_save),
+        original_filename=original_filename,
+        image_type=image_type,
+        image_size=image_size,
+    )
+
+    serializer = ExtractedImageSerializer(extracted, context={'request': request})
+
+    return JsonResponse(serializer.data)
+
