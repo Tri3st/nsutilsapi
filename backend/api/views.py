@@ -264,7 +264,7 @@ def upload_fotos(request):
 
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication])
-@permisssion_classes([IsAthenticated])
+@permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser])
 def upload_foto(request):
     file_obj = request.FILES.get('file')
@@ -303,3 +303,27 @@ def upload_foto(request):
 
     return JsonResponse(serializer.data)
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_uploaded_images(request):
+
+    user = request.user
+    if user.role == 'A'
+        # Admin: list all images with owner's username
+        queryset = ExtractedImage.objects.select_related('user').all()
+    else:
+        # Regular user: only own images
+        queryset = ExtractedImage.objects.filter(user=user)
+
+    serializer = ExtractedImageSerializer(queryset, many=True, contect={'request': request})
+
+    # For admin include the username in the response (if not in serializer, extend it)
+    if user.role == 'A':
+        # add username manually if not present on serializer
+        data = serializer.data
+        for item, obj in zip(data, queryset):
+            item['owner_username'] = obj.user.username
+        return JsonResponse(data)
+
+    return JsonResponse(serializer.data)
