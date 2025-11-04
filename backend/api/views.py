@@ -291,7 +291,7 @@ def list_uploaded_fotos(request):
         data = serializer.data
         for item, obj in zip(data, queryset):
             item['owner_username'] = obj.user.username
-        return Response(data)
+        return paginator.get_paginated_response(data)
 
     return paginator.get_paginated_response(serializer.data)
 
