@@ -279,7 +279,7 @@ def list_uploaded_fotos(request):
         # Regular user: only own images
         queryset = ExtractedImage.objects.filter(user=user)
 
-    serializer = ExtractedImageSerializer(queryset, many=True, contect={'request': request})
+    serializer = ExtractedImageSerializer(queryset, many=True, context={'request': request})
 
     # For admin include the username in the response (if not in serializer, extend it)
     if user.role == 'A':
@@ -287,6 +287,6 @@ def list_uploaded_fotos(request):
         data = serializer.data
         for item, obj in zip(data, queryset):
             item['owner_username'] = obj.user.username
-        return JsonResponse(data)
+        return Response(data)
 
-    return JsonResponse(serializer.data)
+    return Response(serializer.data)
