@@ -7,6 +7,7 @@ import base64
 import zipfile
 
 from django.core.files.base import ContentFile
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication
@@ -270,16 +271,19 @@ def upload_foto(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_uploaded_fotos(request):
-
     user = request.user
+    paginator = PageNumberPagination()
+    paginator.page_size = 12  # Adjust if needed
+
     if user.role == 'A':
         # Admin: list all images with owner's username
-        queryset = ExtractedImage.objects.select_related('user').all()
+        queryset = ExtractedImage.objects.select_related('user').order_by('-created_at')
     else:
         # Regular user: only own images
-        queryset = ExtractedImage.objects.filter(user=user)
+        queryset = ExtractedImage.objects.filter(user=user).order_by('-created_at')
 
-    serializer = ExtractedImageSerializer(queryset, many=True, context={'request': request})
+    paginated_qs = paginator.paginate_queryset(queryset, request)
+    serializer = ExtractedImageSerializer(paginated_qs, many=True, context={'request': request})
 
     # For admin include the username in the response (if not in serializer, extend it)
     if user.role == 'A':
@@ -289,4 +293,5 @@ def list_uploaded_fotos(request):
             item['owner_username'] = obj.user.username
         return Response(data)
 
-    return Response(serializer.data)
+    return paginator.get_paginated_response(serializer.data)
+
