@@ -120,41 +120,6 @@ def text_to_image(request):
     return JsonResponse({"error": "Invalid request"}, status=405)
 
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-@parser_classes([MultiPartParser])
-def convert_raw_image(request):
-    raw_data = request.FILES.get('raw_data')
-    if not raw_data:
-        return JsonResponse({"error": "No raw data provided"}, status=400)
-
-    # ... decode + save as before ...
-
-    serializer = ExtractedImageSerializer(extracted, context={'request': request})
-    return Response(serializer.data)
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-@parser_classes([MultiPartParser])
-def save_selected_images(request):
-    ids = request.data.get('ids', [])
-    user = request.user
-
-    if not isinstance(ids, list) or not ids:
-        return JsonResponse({"error": "No valid IDs provided."}, status=400)
-
-    # Filter images belonging to user and with provided IDs
-    images_to_save = ExtractedImage.objects.filter(id__in=ids, user=user)
-
-    # Implement your "save" logic here — e.g., mark as saved, move, or process them
-    # For demonstration, let's just delete them (or do something else)
-    count = images_to_save.count()
-    images_to_save.delete()
-
-    return Response({"message": f"Successfully saved {count} images."})
-
-
 def find_child_case_insensitive(elem, tag_candidate):
     """ Helper function to find a child element by tag name, ignoring case."""
     for child in elem:
@@ -221,8 +186,6 @@ def upload_fotos(request):
         if tag in ('koppeling_medewerker_fotos', 'koppeling_medewerkers_fotos'):
             medewerker_elem = find_child_case_insensitive(koppeling_elem, 'Medewerker')
             afbeelding_elem = find_child_case_insensitive(koppeling_elem, 'Afbeelding')
-
-            print(f"medewerker_elem : {medewerker_elem} afbeelding_elem : {afbeelding_elem}")
 
             if medewerker_elem is None or afbeelding_elem is None:
                 continue
@@ -306,10 +269,10 @@ def upload_foto(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def list_uploaded_images(request):
+def list_uploaded_fotos(request):
 
     user = request.user
-    if user.role == 'A'
+    if user.role == 'A':
         # Admin: list all images with owner's username
         queryset = ExtractedImage.objects.select_related('user').all()
     else:
