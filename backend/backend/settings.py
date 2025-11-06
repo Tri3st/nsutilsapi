@@ -19,7 +19,7 @@ environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+LOG_DIR = env("DJANGO_LOG_DIR", default="/tmp")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -175,18 +175,30 @@ LOGGING = {
         }
     },
     'handlers': {
-        'file': {
+        'file_error': {
             'level': 'ERROR',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'django-error.log'),
+            'filename': os.path.join(LOG_DIR, 'django_info.log'),
+            'formatter': 'verbose',
+            },
+        'file_info': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'django_error.log'),
+            'formatter': 'verbose',
             },
         },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['file_error'],
             'level': 'ERROR',
             'propagate': True,
             },
+        'api': {
+            'handlers': ['file_info'],
+            'level': 'INFO',
+            'propagate': False,
+            }
         },
     }
 
