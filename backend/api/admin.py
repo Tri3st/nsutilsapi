@@ -22,9 +22,13 @@ class ExtractedImageAdmin(admin.ModelAdmin):
     search_fields = ('original_filename', 'owner_username')
 
     def image_preview(self, obj):
-        if obj.url:
-            return format_html('<img src="{}" width="100" />', obj.url)
+        try:
+            if obj.image and obj.image.url:
+                return format_html('<img src="{}" width="100" />', obj.image.url)
+        except ValueError:
+            pass
         return '-'
+
     image_preview.short_description = 'Preview'
 
     def get_owner_username(self, obj):
