@@ -24,10 +24,17 @@ class ExtractedImageAdmin(admin.ModelAdmin):
         'image_preview', 
         'image_type', 
         'image_size', 
+        'medewerker_number',
         'get_owner_username',
         'formatted_created_at'
     )
-    search_fields = ('original_filename', 'owner_username')
+    search_fields = ('original_filename', 'user__username', 'medewerker_number')
+
+    list_filter = (
+        'image_type',
+        'user',
+        ('created_at', admin.DateFieldListFilter),  # Filter on date
+    )
 
     def image_preview(self, obj):
         try:
