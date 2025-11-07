@@ -25,7 +25,7 @@ class ExtractedImageAdmin(admin.ModelAdmin):
         'image_type', 
         'image_size', 
         'get_owner_username',
-        'created_at'
+        'formatted_created_at'
     )
     search_fields = ('original_filename', 'owner_username')
 
@@ -44,4 +44,11 @@ class ExtractedImageAdmin(admin.ModelAdmin):
 
     get_owner_username.short_description = 'Owner Username'
     get_owner_username.admin_order_field = 'user__username'
+
+    def formatted_created_at(self, obj):
+        return obj.created_at.strftime('%d-%m-%Y %H:%M') if obj.created_at else '-'
+
+    formatted_created_at.short_description = 'Upload Datum'
+    formatted_created_at.admin_order_field = 'created_at'
+
 
