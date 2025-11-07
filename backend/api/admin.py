@@ -18,7 +18,7 @@ admin.site.register(CustomUser, CustomUserAdmin)
 
 @admin.register(ExtractedImage)
 class ExtractedImageAdmin(admin.ModelAdmin):
-    list_display = ('original_filename', 'image_type', 'imaige_size', 'owner_username')
+    list_display = ('original_filename', 'image_preview', 'image_type', 'image_size', 'get_owner_username')
     search_fields = ('original_filename', 'owner_username')
 
     def image_preview(self, obj):
@@ -26,4 +26,10 @@ class ExtractedImageAdmin(admin.ModelAdmin):
             return format_html('<img src="{}" width="100" />', obj.url)
         return '-'
     image_preview.short_description = 'Preview'
+
+    def get_owner_username(self, obj):
+        return obj.user.username
+
+    get_owner_username.short_description = 'Owner Username'
+    get_owner_username.admin_order_field = 'user__username'
 
