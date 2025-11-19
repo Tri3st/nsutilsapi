@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
-from .models import CustomUser, ExtractedImage
+from .models import CustomUser, ExtractedImage, IProtectUser
 
 
 # Register your models here.
@@ -58,4 +58,10 @@ class ExtractedImageAdmin(admin.ModelAdmin):
     formatted_created_at.short_description = 'Upload Datum'
     formatted_created_at.admin_order_field = 'created_at'
 
+
+@admin.register(IProtectUser)
+class IProtectUserAdmin(admin.ModelAdmin):
+    list_display = ('full_name', 'email_name', 'ad_name', 'email_ns', 'email_eigen', 'has_ad', 'is_in_mail_dist')
+    search_fields = ('full_name', 'email_name', 'ad_naam', 'email_ns', 'email_eigen')
+    list_filter = ('has_ad', 'is_in_mail_dist')
 

@@ -46,3 +46,46 @@ class ExtractedImage(models.Model):
         if self.image:
             self.image.delete(save=False)
         super().delete(*args, **kwargs)
+
+
+class BaseUser(models.Model):
+    SOURCE_CHOICES = (
+        ('iProtect', 'iProtect'),
+        ('iWork', 'iWork'),
+        ('OCMS', 'OCMS'),
+    )
+    full_name = models.CharField(max_length=255, blank=True, null=True)
+    ad_name = models.CharField(max_length=255, blank=True, null=True)
+    email_name = models.CharField(max_length=255, blank=True, null=True)
+    first_name = models.CharField(max_length=255, blank=True, null=True)
+    middle_names = models.CharField(max_length=255, blank=True, null=True)
+    last_name = models.CharField(max_length=255, blank=True, null=True)
+    initials = models.CharField(max_length=255, blank=True, null=True)
+    email_eigen = models.EmailField(blank=True, null=True)
+    email_ns = models.EmailField(blank=True, null=True)
+    source = models.CharField(max_length=8, choices=SOURCE_CHOICES)  # 'iprotect', 'iwork', 'ocms'
+    has_ad = models.BooleanField(default=False)
+    is_in_mail_dist = models.BooleanField(default=False)
+
+
+    class Meta:
+        abstract = True
+
+
+class IProtectUser(BaseUser):
+    # Add specific fields or flags if needed
+    def __str__(self):
+        return self.email_ns or self.email_eigen or "Unnamed user"
+
+
+class IWorkUser(BaseUser):
+    # Add specific fields or flags if needed
+    def __str__(self):
+        return self.email_ns or self.email_eigen or "Unnamed user"
+
+
+class OCMSUser(BaseUser):
+    # Add specific fields or flags if needed
+    def __str__(self):
+        return self.email_ns or self.email_eigen or "Unnamed user"
+

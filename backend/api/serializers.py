@@ -1,6 +1,6 @@
 # backend/api/serializer.py
 from rest_framework import serializers
-from .models import ExtractedImage
+from .models import ExtractedImage, IProtectUser
 
 
 class ExtractedImageSerializer(serializers.ModelSerializer):
@@ -34,3 +34,20 @@ class ExtractedImageSerializer(serializers.ModelSerializer):
             return obj.image.url
         return None
 
+
+class IProtectUserSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = IProtectUser
+        fields = '__all__'
+
+    def get_full_name(self, obj):
+        parts = [obj.firstname or '']
+        if obj.initials:
+            parts.append(obj.initials)
+        if obj.middlenames:
+            parts.append(obj.middelnames)
+        if obj.lastname:
+            parts.append(obj.lastname)
+        return ' '.join(p.strip() for p in parts if p).strip() 
