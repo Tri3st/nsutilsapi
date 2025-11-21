@@ -310,11 +310,15 @@ def upload_weight_csv(request):
 
     csv_file = TextIOWrapper(file_obj.file, encoding='utf-8')
 
-    # Skip first 7 metadata lines
+    # Skip the first 7 metadata lines
     for _ in range(7):
         next(csv_file)
 
     reader = csv.DictReader(csv_file, delimiter=";")
+
+    # Find the latest datetime in DB
+    latest_entry = WeightMeasurement.objects.order_by('-datetime').first()
+    latest_datetime = latest_entry.datetime if latest_entry else None
 
     count = 0
     errors = 0
@@ -322,6 +326,10 @@ def upload_weight_csv(request):
         try:
             datetime_str = row['Date - Time'].strip()
             dt = datetime.datetime.strptime(datetime_str, '%d-%m-%Y %H:%M:%S')
+
+            # Skip if this datetime is <= latest in DB
+            if latest_datetime and dt <= latest_datetime:
+                continue
 
             weight = float(row['Body weight (kg)'].strip())
             bone_mass = float(row.get('Bone mass (%)').strip())
@@ -373,3 +381,14 @@ def weight_measurement_list(request):
 
     serializer = WeightMeasurementsSerializer(queryset, many=True)
     return Response(serializer.data)
+
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def latest_measurement_datetime(request):
+    latest = WeightMeasurement.objects.order_by('-datetime').first()
+    if latest:
+        return Response({'datetime': latest.datetime.isoformat()})
+    return Response({'datetime': None})
+
