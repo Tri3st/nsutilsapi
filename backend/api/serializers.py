@@ -1,6 +1,6 @@
 # backend/api/serializer.py
 from rest_framework import serializers
-from .models import ExtractedImage, IProtectUser
+from .models import ExtractedImage, IProtectUser, WeightMeasurement
 
 
 class ExtractedImageSerializer(serializers.ModelSerializer):
@@ -51,3 +51,17 @@ class IProtectUserSerializer(serializers.ModelSerializer):
         if obj.lastname:
             parts.append(obj.lastname)
         return ' '.join(p.strip() for p in parts if p).strip() 
+
+
+class WeightMeasurementsSerializer(serializers.Serializer):
+    class Meta:
+        model = WeightMeasurement
+        fields = [
+            'datetime',
+            'weight_kg',
+            'bone_mass',
+            'body_fat',
+            'body_water',
+            'muscle_mass',
+            'bmi',
+        ]

@@ -1,4 +1,4 @@
-import datetime
+
 from django.utils import timezone
 
 from django.conf import settings
@@ -89,3 +89,15 @@ class OCMSUser(BaseUser):
     def __str__(self):
         return self.email_ns or self.email_eigen or "Unnamed user"
 
+
+class WeightMeasurement(models.Model):
+    date = models.DateField()
+    weight_kg = models.DecimalField(max_digits=5, decimal_places=2)
+    bone_mass = models.DecimalField(max_digits=5, decimal_places=2)
+    body_fat = models.DecimalField(max_digits=5, decimal_places=2)
+    body_water = models.DecimalField(max_digits=5, decimal_places=2)
+    muscle_mass = models.DecimalField(max_digits=5, decimal_places=2)
+    bmi = models.DecimalField(max_digits=5, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.date} - {self.weight_kg} kg"

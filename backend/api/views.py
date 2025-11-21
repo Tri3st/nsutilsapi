@@ -5,27 +5,31 @@ import uuid
 import datetime
 import base64
 import zipfile
+import csv
 
+from io import TextIOWrapper
 from django.core.files.base import ContentFile
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate, login, logout
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
 from django.views.decorators.csrf import ensure_csrf_cookie
-from rest_framework.decorators import permission_classes, api_view, authentication_classes, parser_classes
+from rest_framework.decorators import parser_classes
 from django.conf import settings
 from django.http import JsonResponse
 from PIL import Image, ImageDraw, ImageFont
-
-from .serializers import ExtractedImageSerializer
-from .authentication import BearerAuthentication
-from .models import ExtractedImage
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.response import Response
 import xml.etree.ElementTree as ET
+
+from .serializers import ExtractedImageSerializer, WeightMeasurementsSerializer
+from .authentication import BearerAuthentication
+from .models import ExtractedImage, WeightMeasurement
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class LoginView(APIView):
@@ -295,3 +299,77 @@ def list_uploaded_fotos(request):
 
     return paginator.get_paginated_response(serializer.data)
 
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def upload_weight_csv(request):
+    file_obj = request.FILES.get('file')
+    if not file_obj:
+        return Response({'error': 'No file uploaded.'}, status=400)
+
+    csv_file = TextIOWrapper(file_obj.file, encoding='utf-8')
+
+    # Skip first 7 metadata lines
+    for _ in range(7):
+        next(csv_file)
+
+    reader = csv.DictReader(csv_file, delimiter=";")
+
+    count = 0
+    errors = 0
+    for row in reader:
+        try:
+            datetime_str = row['Date - Time'].strip()
+            dt = datetime.datetime.strptime(datetime_str, '%d-%m-%Y %H:%M:%S')
+
+            weight = float(row['Body weight (kg)'].strip())
+            bone_mass = float(row.get('Bone mass (%)').strip())
+            body_fat = float(row.get('Body fat (%)').strip())
+            body_water = float(row.get('Body water (%)').strip())
+            muscle_mass = float(row.get('Muscle mass (%)').strip())
+            bmi = float(row.get('BMI').strip())
+
+            WeightMeasurement.objects.update_or_create(
+                datetime=dt,
+                defaults={
+                    'weight_kg': weight,
+                    'bone_mass': bone_mass,
+                    'body_fat': body_fat,
+                    'body_water': body_water,
+                    'muscle_mass': muscle_mass,
+                    'bmi': bmi,
+                }
+            )
+            count += 1
+        except Exception as e:
+            errors += 1
+            # Optionally log e for debugging
+
+    return Response({
+        'message': f'Successfully processed {count} entries.',
+        'errors': errors
+    })
+
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def weight_measurement_list(request):
+    queryset = WeightMeasurement.objects.all().order_by('datetime')
+
+    # Filtering
+    datetime_gte = request.GET.get('datetime__gte')
+    datetime_lte = request.GET.get('datetime__lte')
+    if datetime_gte:
+        queryset = queryset.filter(datetime__gte=datetime_gte)
+    if datetime_lte:
+        queryset = queryset.filter(datetime__lte=datetime_lte)
+
+    # Ordering
+    ordering = request.GET.get('ordering')
+    if ordering in ['datetime', '-datetime', 'weight_kg', '-weight_kg']:
+        queryset = queryset.order_by(ordering)
+
+    serializer = WeightMeasurementsSerializer(queryset, many=True)
+    return Response(serializer.data)
