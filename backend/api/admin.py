@@ -62,6 +62,6 @@ class ExtractedImageAdmin(admin.ModelAdmin):
 @admin.register(IProtectUser)
 class IProtectUserAdmin(admin.ModelAdmin):
     list_display = ('full_name', 'email_name', 'ad_name', 'email_ns', 'email_eigen', 'has_ad', 'is_in_mail_dist')
-    search_fields = ('full_name', 'email_name', 'ad_naam', 'email_ns', 'email_eigen')
+    search_fields = ('full_name', 'email_name', 'ad_name', 'email_ns', 'email_eigen')
     list_filter = ('has_ad', 'is_in_mail_dist')
 
