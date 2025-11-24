@@ -65,3 +65,45 @@ class IProtectUserAdmin(admin.ModelAdmin):
     search_fields = ('full_name', 'email_name', 'ad_name', 'email_ns', 'email_eigen')
     list_filter = ('has_ad', 'is_in_mail_dist')
 
+
+class CsvImportForm(forms.Form):
+    csv_file = forms.FileField()
+
+
+@admin.register(WeightMeasurement)
+class WeightMeasurementAdmin(admin.ModelAdmin):
+    list_display = ('datetime', 'weight_kg', 'bone_mass', 'body_fat', 'body_water', 'muscle_mass', 'bmi')
+    change_list_template = "admin/weightmeasurement_changelist.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path('import-csv/', self.import_csv, name='weightmeasurement_import_csv'),
+        ]
+        return my_urls + urls
+
+    def import_csv(self, request):
+        if request.method == "POST":
+            form = CsvImportForm(request.POST, request.FILES)
+            if form.is_valid():
+                csv_file = request.FILES['csv_file']
+
+                # Prepare a DRF APIRequest for your function
+                factory = upload_weight_csv(api_request)
+                api_request = factory.post('/fake-url/', {'file': csv_file}, format='multipart')
+                api_request.user = request.user  # add user for authentication
+
+                response = upload_weight_csv(api_request)
+
+                if response.status_code == status.HTTP_200_OK:
+                    self.message_user(request.data.get('message', 'CSV imported'))
+                else:
+                    self.message_user(request, 'Error uploading csv', level='error')
+
+                return redirect('..')
+
+        else:
+            form = CsvImportForm()
+
+        return render(request, 'admin/csv_form.html' {'form': form})
+

@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+    <div class="object-tools">
+        <ul class="nav nav-pills">
+            <il><a href="{% url 'admin:weightmeasurement_import_csv' %}">Import CSV</a></li>
+        </ul>
+    </div>
+    {{ block.super }}
+{% endblock %}
+
