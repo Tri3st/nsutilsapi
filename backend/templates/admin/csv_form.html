@@ -1,7 +1,11 @@
 {% extends "admin/base_site.html" %}
 {% block content %}
   <h1>Import CSV file</h1>
-  <form method="POST" enctype="multipart/form-data">
+  <form 
+    method="POST" 
+    enctype="multipart/form-data"
+    action="{% url 'admin:api_weightmeasurement_import_csv' %}"
+  >
     {% csrf_token %}
     {{ form.as_p }}
     <input type="submit" value="upload" />

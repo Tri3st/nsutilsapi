@@ -317,7 +317,7 @@ def upload_weight_csv(request):
     reader = csv.DictReader(csv_file, delimiter=";")
 
     # Find the latest datetime in DB
-    latest_entry = WeightMeasurement.objects.order_by('-datetime').first()
+    latest_entry = WeightMeasurement.objects.order_by('-date').first()
     latest_datetime = latest_entry.datetime if latest_entry else None
 
     count = 0
@@ -339,7 +339,7 @@ def upload_weight_csv(request):
             bmi = float(row.get('BMI').strip())
 
             WeightMeasurement.objects.update_or_create(
-                datetime=dt,
+                date=dt,
                 defaults={
                     'weight_kg': weight,
                     'bone_mass': bone_mass,
@@ -364,11 +364,11 @@ def upload_weight_csv(request):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def weight_measurement_list(request):
-    queryset = WeightMeasurement.objects.all().order_by('datetime')
+    queryset = WeightMeasurement.objects.all().order_by('date')
 
     # Filtering
-    datetime_gte = request.GET.get('datetime__gte')
-    datetime_lte = request.GET.get('datetime__lte')
+    datetime_gte = request.GET.get('date__gte')
+    datetime_lte = request.GET.get('date__lte')
     if datetime_gte:
         queryset = queryset.filter(datetime__gte=datetime_gte)
     if datetime_lte:
@@ -376,7 +376,7 @@ def weight_measurement_list(request):
 
     # Ordering
     ordering = request.GET.get('ordering')
-    if ordering in ['datetime', '-datetime', 'weight_kg', '-weight_kg']:
+    if ordering in ['date', '-date', 'weight_kg', '-weight_kg']:
         queryset = queryset.order_by(ordering)
 
     serializer = WeightMeasurementsSerializer(queryset, many=True)
@@ -387,8 +387,8 @@ def weight_measurement_list(request):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def latest_measurement_datetime(request):
-    latest = WeightMeasurement.objects.order_by('-datetime').first()
+    latest = WeightMeasurement.objects.order_by('-date').first()
     if latest:
-        return Response({'datetime': latest.datetime.isoformat()})
-    return Response({'datetime': None})
+        return Response({'date': latest.datetime.isoformat()})
+    return Response({'date': None})
 

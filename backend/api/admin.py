@@ -1,10 +1,14 @@
+import traceback
 from django import forms
 from django.shortcuts import redirect, render
 from django.urls import path 
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin
+from django.views.decorators.csrf import csrf_protect
+from django.utils.decorators import method_decorator
 from django.utils.html import format_html
-from rest_framework.test import APIRequestFactory
+from rest_framework.request import Request
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 from .views import upload_weight_csv
 from .models import CustomUser, ExtractedImage, IProtectUser, WeightMeasurement
@@ -84,27 +88,23 @@ class WeightMeasurementAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
-            path('import-csv/', self.import_csv, name='weightmeasurement_import_csv'),
+            path('import-csv/', self.admin_site.admin_view(self.import_csv), name='api_weightmeasurement_import_csv'),
         ]
         return my_urls + urls
 
+    @method_decorator(csrf_protect, name='dispatch')
     def import_csv(self, request):
         if request.method == "POST":
             form = CsvImportForm(request.POST, request.FILES)
             if form.is_valid():
-                csv_file = request.FILES['csv_file']
-
-                # Prepare a DRF APIRequest for your function
-                factory = APIRequestFactory()
-                api_request = factory.post('/fake-url/', {'file': csv_file}, format='multipart')
-                api_request.user = request.user  # add user for authentication
-
-                response = upload_weight_csv(api_request)
+                # Wrap Django request as DRF request with parsers
+                drf_request = Request(request, parsers=[MultiPartParser(), FormParser()])
+                drf_request.user = request.user  # Keep user for auth
 
                 if response.status_code == status.HTTP_200_OK:
-                    self.message_user(request.data.get('message', 'CSV imported'))
+                    self.message_user(request, response.data.get('message', 'CSV imported'))
                 else:
-                    self.message_user(request, 'Error uploading csv', level='error')
+                    self.message_user(request, response.data.get('error', 'Error uploading csv'), level='error')
 
                 return redirect('..')
 
