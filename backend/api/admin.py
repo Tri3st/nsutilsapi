@@ -1,7 +1,13 @@
+from django import forms
+from django.shortcuts import redirect, render
+from django.urls import path 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
-from .models import CustomUser, ExtractedImage, IProtectUser
+from rest_framework.test import APIRequestFactory
+from rest_framework import status
+from .views import upload_weight_csv
+from .models import CustomUser, ExtractedImage, IProtectUser, WeightMeasurement
 
 
 # Register your models here.
@@ -72,7 +78,7 @@ class CsvImportForm(forms.Form):
 
 @admin.register(WeightMeasurement)
 class WeightMeasurementAdmin(admin.ModelAdmin):
-    list_display = ('datetime', 'weight_kg', 'bone_mass', 'body_fat', 'body_water', 'muscle_mass', 'bmi')
+    list_display = ('date', 'weight_kg', 'bone_mass', 'body_fat', 'body_water', 'muscle_mass', 'bmi')
     change_list_template = "admin/weightmeasurement_changelist.html"
 
     def get_urls(self):
@@ -89,7 +95,7 @@ class WeightMeasurementAdmin(admin.ModelAdmin):
                 csv_file = request.FILES['csv_file']
 
                 # Prepare a DRF APIRequest for your function
-                factory = upload_weight_csv(api_request)
+                factory = APIRequestFactory()
                 api_request = factory.post('/fake-url/', {'file': csv_file}, format='multipart')
                 api_request.user = request.user  # add user for authentication
 
@@ -105,5 +111,5 @@ class WeightMeasurementAdmin(admin.ModelAdmin):
         else:
             form = CsvImportForm()
 
-        return render(request, 'admin/csv_form.html' {'form': form})
+        return render(request, 'admin/csv_form.html', {'form': form})
 
