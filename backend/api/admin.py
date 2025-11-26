@@ -1,7 +1,7 @@
-import traceback
+import logging
 from django import forms
 from django.shortcuts import redirect, render
-from django.urls import path 
+from django.urls import path
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin
 from django.views.decorators.csrf import csrf_protect
@@ -9,9 +9,14 @@ from django.utils.decorators import method_decorator
 from django.utils.html import format_html
 from rest_framework.request import Request
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.status import HTTP_200_OK
 from rest_framework import status
 from .views import upload_weight_csv
 from .models import CustomUser, ExtractedImage, IProtectUser, WeightMeasurement
+
+
+# Use the api logger
+logger = logging.getLogger('api')
 
 
 # Register your models here.
@@ -77,7 +82,7 @@ class IProtectUserAdmin(admin.ModelAdmin):
 
 
 class CsvImportForm(forms.Form):
-    csv_file = forms.FileField()
+    csv_file = forms.FileField(label='CSV file')
 
 
 @admin.register(WeightMeasurement)
@@ -97,16 +102,41 @@ class WeightMeasurementAdmin(admin.ModelAdmin):
         if request.method == "POST":
             form = CsvImportForm(request.POST, request.FILES)
             if form.is_valid():
+                csv_file = form.cleaned_data['csv_file']
+                logger.info("CSV upload started by user %s via admin view.", request.user)
+
+                
                 # Wrap Django request as DRF request with parsers
                 drf_request = Request(request, parsers=[MultiPartParser(), FormParser()])
                 drf_request.user = request.user  # Keep user for auth
 
-                if response.status_code == status.HTTP_200_OK:
-                    self.message_user(request, response.data.get('message', 'CSV imported'))
-                else:
-                    self.message_user(request, response.data.get('error', 'Error uploading csv'), level='error')
+                # IMPORTANT: The DRF view expects the file in request.FILES['file']
+                # So override FILES to rename 'csv_file' to 'file'
+                drf_request.FILES._mutable = True
+                drf_request.FILES['file'] = csv_file
 
-                return redirect('..')
+                if 'csv_file' in drf_request.FILES:
+                    del drf_request.FILES['csv_file']
+                drf_request.FILES._mutable = False
+
+                try:
+                    # Call your exeisting DRF View functionm
+                    response = upload_weight_csv(drf_request._request)  # Pass orginal request
+
+                    if response.status_code == status.HTTP_200_OK:
+                        message = response.data.get('message', 'CSV imported successfully.')
+                        self.message_user(request, message)
+                        logger.info("User %s successfully imported CSV, message is: %s", request.user, message)
+                    else:
+                        err_msg = response.data.get('error', 'Error uploading csv')
+                        self.message_user(request, err_msg, level="error")
+                        logger.error("User %s CSV import failed, error: %s", request.user, err_msg)
+
+                    return redirect('..')
+
+                except Excpetion as e:
+                    logger.error("User %s encountered an exception during csv import: %s", request.user, e, exc_info=True)
+                    self.message_user(request, f"Unexpected error: {e}", level="error")
 
         else:
             form = CsvImportForm()

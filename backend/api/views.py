@@ -6,6 +6,7 @@ import datetime
 import base64
 import zipfile
 import csv
+import logging
 
 from io import TextIOWrapper
 from django.core.files.base import ContentFile
@@ -30,6 +31,9 @@ import xml.etree.ElementTree as ET
 from .serializers import ExtractedImageSerializer, WeightMeasurementsSerializer
 from .authentication import BearerAuthentication
 from .models import ExtractedImage, WeightMeasurement
+
+
+logger = logging.getLogger('api')
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class LoginView(APIView):
@@ -304,39 +308,44 @@ def list_uploaded_fotos(request):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def upload_weight_csv(request):
+
     file_obj = request.FILES.get('file')
     if not file_obj:
         return Response({'error': 'No file uploaded.'}, status=400)
 
     csv_file = TextIOWrapper(file_obj.file, encoding='utf-8')
 
-    # Skip the first 7 metadata lines
-    for _ in range(7):
+    # Skip the first 9 metadata lines
+    for _ in range(9):
         next(csv_file)
 
     reader = csv.DictReader(csv_file, delimiter=";")
 
     # Find the latest datetime in DB
     latest_entry = WeightMeasurement.objects.order_by('-date').first()
-    latest_datetime = latest_entry.datetime if latest_entry else None
+    latest_datetime = latest_entry.date if latest_entry else None
 
     count = 0
     errors = 0
+
+    logger.info(f"Latest WeightMeasurement date in DB: {latest_datetime}")
+
     for row in reader:
         try:
             datetime_str = row['Date - Time'].strip()
-            dt = datetime.datetime.strptime(datetime_str, '%d-%m-%Y %H:%M:%S')
+            dt = datetime.datetime.strptime(datetime_str, '%d/%m/%Y %H:%M')
 
-            # Skip if this datetime is <= latest in DB
+            # If no entries in DB, import all rows
             if latest_datetime and dt <= latest_datetime:
+                logger.info(f"Skipping row with date {dt} because its <= latest DB date {latest_datetime}")
                 continue
 
             weight = float(row['Body weight (kg)'].strip())
-            bone_mass = float(row.get('Bone mass (%)').strip())
-            body_fat = float(row.get('Body fat (%)').strip())
-            body_water = float(row.get('Body water (%)').strip())
-            muscle_mass = float(row.get('Muscle mass (%)').strip())
-            bmi = float(row.get('BMI').strip())
+            bone_mass = float(row.get('Bone mass (%)').strip() or 0)
+            body_fat = float(row.get('Body fat (%)').strip() or 0)
+            body_water = float(row.get('Body water (%)').strip() or 0)
+            muscle_mass = float(row.get('Muscle mass (%)').strip() or 0)
+            bmi = float(row.get('BMI').strip() or 0)
 
             WeightMeasurement.objects.update_or_create(
                 date=dt,
@@ -352,7 +361,7 @@ def upload_weight_csv(request):
             count += 1
         except Exception as e:
             errors += 1
-            # Optionally log e for debugging
+            logger.error(f"Error processing CSV row {row}: {e}", exc_info=True)
 
     return Response({
         'message': f'Successfully processed {count} entries.',

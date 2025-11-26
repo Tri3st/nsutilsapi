@@ -181,13 +181,13 @@ LOGGING = {
         'file_error': {
             'level': 'ERROR',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(LOG_DIR, 'django_info.log'),
+            'filename': os.path.join(LOG_DIR, 'django_error.log'),
             'formatter': 'verbose',
             },
         'file_info': {
             'level': 'INFO',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(LOG_DIR, 'django_error.log'),
+            'filename': os.path.join(LOG_DIR, 'django_info.log'),
             'formatter': 'verbose',
             },
         },
