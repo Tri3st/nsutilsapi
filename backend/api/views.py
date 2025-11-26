@@ -333,7 +333,7 @@ def upload_weight_csv(request):
     for row in reader:
         try:
             datetime_str = row['Date - Time'].strip()
-            dt = datetime.datetime.strptime(datetime_str, '%d/%m/%Y %H:%M')
+            dt = datetime.datetime.strptime(datetime_str, '%m/%d/%Y - %H:%M')
 
             # If no entries in DB, import all rows
             if latest_datetime and dt <= latest_datetime:
