@@ -409,3 +409,78 @@ def latest_measurement_datetime(request):
         return Response({'date': latest.datetime.isoformat()})
     return Response({'date': None})
 
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def get_minmaxavg(request):
+    user = request.user
+
+    # get min, max and avg values for all the values of this user
+    total = {
+        'count': 0,
+        'weight_kg': 0,
+        'bone_mass': 0,
+        'body_fat': 0,
+        'body_water': 0,
+        'muscle_mass': 0,
+        'bmi': 0
+    }
+    min = {
+        'weight_kg': 1000,
+        'bone_mass': 100,
+        'body_fat': 100,
+        'body_water': 100,
+        'muscle_mass': 100,
+        'bmi': 1000
+    }
+    max = {
+        'weight_kg': 0,
+        'bone_mass': 0,
+        'body_fat': 0,
+        'body_water': 0,
+        'muscle_mass': 0,
+        'bmi': 0
+    }
+    measurements = WeightMeasurement.objects.filter(user=user)
+    for measurement in measurements:
+        for key in total.keys():
+            if key != 'count':
+                total[key] += getattr(measurement, key)
+                if getattr(measurement, key) < min[key]:
+                    min[key] = getattr(measurement, key)
+                if getattr(measurement, key) > max[key]:
+                    max[key] = getattr(measurement, key)
+            total['count'] += 1
+
+    print(total)
+    if total['count'] == 0:
+        return Response({'error': 'No measurements found for this user.'})
+
+    results = {
+        'avg': {
+            'weight_kg': total['weight_kg']/total['count'],
+            'bone_mass': total['bone_mass']/total['count'],
+            'body_fat': total['body_fat']/total['count'],
+            'body_water': total['body_water']/total['count'],
+            'muscle_mass': total['muscle_mass']/total['count'],
+            'bmi': total['bmi']/total['count']
+        },
+        'min': {
+            'weight_kg': min['weight_kg'],
+            'bone_mass': min['bone_mass'],
+            'body_fat': min['body_fat'],
+            'body_water': min['body_water'],
+            'muscle_mass': min['muscle_mass'],
+            'bmi': min['bmi']
+        },
+        'max': {
+            'weight_kg': max['weight_kg'],
+            'bone_mass': max['bone_mass'],
+            'body_fat': max['body_fat'],
+            'body_water': max['body_water'],
+            'muscle_mass': max['muscle_mass'],
+            'bmi': max['bmi']
+        }
+    }
+    return Response({'minmaxavg': results})
