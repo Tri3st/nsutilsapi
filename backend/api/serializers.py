@@ -53,11 +53,12 @@ class IProtectUserSerializer(serializers.ModelSerializer):
         return ' '.join(p.strip() for p in parts if p).strip() 
 
 
-class WeightMeasurementsSerializer(serializers.Serializer):
+class WeightMeasurementsSerializer(serializers.ModelSerializer):
     class Meta:
         model = WeightMeasurement
         fields = [
-            'datetime',
+            'user',
+            'date',
             'weight_kg',
             'bone_mass',
             'body_fat',

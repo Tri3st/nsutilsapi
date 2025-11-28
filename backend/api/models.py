@@ -91,6 +91,8 @@ class OCMSUser(BaseUser):
 
 
 class WeightMeasurement(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='weight_measurements')
+
     date = models.DateField()
     weight_kg = models.DecimalField(max_digits=5, decimal_places=2)
     bone_mass = models.DecimalField(max_digits=5, decimal_places=2)

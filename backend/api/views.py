@@ -373,23 +373,31 @@ def upload_weight_csv(request):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def weight_measurement_list(request):
-    queryset = WeightMeasurement.objects.all().order_by('date')
+
+    user = request.user
+
+    queryset = WeightMeasurement.objects.filter(user=user).order_by('date')
 
     # Filtering
-    datetime_gte = request.GET.get('date__gte')
-    datetime_lte = request.GET.get('date__lte')
-    if datetime_gte:
-        queryset = queryset.filter(datetime__gte=datetime_gte)
-    if datetime_lte:
-        queryset = queryset.filter(datetime__lte=datetime_lte)
+    date_gte = request.GET.get('date__gte')
+    date_lte = request.GET.get('date__lte')
+    if date_gte:
+        queryset = queryset.filter(date__gte=date_gte)
+    if date_lte:
+        queryset = queryset.filter(date__lte=date_lte)
 
     # Ordering
     ordering = request.GET.get('ordering')
     if ordering in ['date', '-date', 'weight_kg', '-weight_kg']:
         queryset = queryset.order_by(ordering)
 
-    serializer = WeightMeasurementsSerializer(queryset, many=True)
-    return Response(serializer.data)
+    # Use the project's global paginator
+    paginator = PageNumberPagination()  # DRF will inject DEFAULT_PAGINATION_CLASS settings
+    paginated_page = paginator.paginate_queryset(queryset, request)
+
+    serializer = WeightMeasurementsSerializer(paginated_page, many=True)
+
+    return paginator.get_paginated_response(serializer.data)
 
 
 @api_view(['GET'])
