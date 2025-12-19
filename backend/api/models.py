@@ -55,6 +55,7 @@ class BaseUser(models.Model):
         ('OCMS', 'OCMS'),
     )
     full_name = models.CharField(max_length=255, blank=True, null=True)
+    inlog_name = models.CharField(max_length=255, blank=True, null=True)
     ad_name = models.CharField(max_length=255, blank=True, null=True)
     email_name = models.CharField(max_length=255, blank=True, null=True)
     first_name = models.CharField(max_length=255, blank=True, null=True)
@@ -66,7 +67,6 @@ class BaseUser(models.Model):
     source = models.CharField(max_length=8, choices=SOURCE_CHOICES)  # 'iprotect', 'iwork', 'ocms'
     has_ad = models.BooleanField(default=False)
     is_in_mail_dist = models.BooleanField(default=False)
-
 
     class Meta:
         abstract = True
